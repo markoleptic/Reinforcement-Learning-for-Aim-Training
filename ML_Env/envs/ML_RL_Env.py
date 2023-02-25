@@ -155,7 +155,7 @@ class ML_RL_Env(gym.Env):
             self.window.blit(canvas, canvas.get_rect())
             for x in range(self.numRows):
                 for y in range(self.numCols):
-                    self.window.blit(number_font.render(str(int(self.activeTargets[y][x])), True, (255,0,0)), (50*x,50*y))
+                    self.window.blit(number_font.render(str(int(self.activeTargets[y][x])), True, (255,0,0)), ((50*x)+5,(50*y)+5))
             pygame.event.pump()
             pygame.display.update()
 
