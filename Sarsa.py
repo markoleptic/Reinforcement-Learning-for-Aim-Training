@@ -83,7 +83,7 @@ def updateQTable(Q, prevPos, position, reward):
 
 # create ML_RL_Env environment, everything besides first parameter is optional
 # set render_mode to "human" to view the game
-env = gym.make('ML_Env/ML_RL_Env-v0', render_mode="rgb_array", numRows=17, numCols=9, timeStep = 0.35, episodeLength = 350000)
+env = gym.make('ML_Env/ML_RL_Env-v0', render_mode="rgb_array", numRows=17, numCols=9, timeStep = 0.35, episodeLength = 35000)
 
 env.reset()
 terminated = False
