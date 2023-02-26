@@ -4,26 +4,42 @@ from gymnasium.utils.env_checker import check_env
 import pygame
 import numpy as np
 
+Profile1Matrix = [[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.7, 0.7],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.7, 0.8, 0.7],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.6, 0.7, 0.6],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.7, 0.7, 0.7],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.7, 0.6, 0.6, 0.6, 0.6],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.7, 0.5, 0.4, 0.4, 0.4],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.3],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3]]
+
 class ML_RL_Env(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, numRows=17, numCols=9):
+    def __init__(self, render_mode=None, numRows=17, numCols=9, timeStep = 0.35, episodeLength = 35000):
         self.numRows = numRows
         self.numCols = numCols
-        self.spawnNum = 0
-        self.timeStep = 0.35
+        self.timeStep = timeStep
         self.currentTimeStep = 0
-        self.episodeLength = 100
+        self.episodeLength = episodeLength
         self.observation_space = Dict(
             {
-                "activeTargets": Box(0, 3, shape=(numCols-1, numCols-1), dtype=int),
                 "prevPos": Box(0, np.array([numRows-1, numRows-1]), shape=(2,), dtype=int),
                 "position": Box(0, np.array([numRows-1, numCols-1]), shape=(2,), dtype=int),
             }
         )
         self.action_space = Box(0, np.array([numRows-1, numCols-1]), shape=(2,), dtype=int)
+        self.numTargetSpawns = np.array([numRows-1, numCols-1])
 
-        self.targetValues = np.array([numRows-1, numCols-1])
+        """
+        Create a profile for a person with given accuracy in every state. This accuracy number
+        will then be used in incrementReward(). The agent's chance to recieve the reward is
+        (100 - (accuracy * 100))% chance. 
+        Could take this further and slowly increment the accuracy by 0.01 for each time they encounter
+        the state and successfully shoot it (agent does not recieve reward).
+        """
+        self.accuracyMatrix = np.zeros((17,9))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -41,13 +57,15 @@ class ML_RL_Env(gym.Env):
     def _get_obs(self):
         return {"position": self.position,
                 "prevPos": self.prevPos,
-                "activeTargets": self.activeTargets
                 }
 
+    # not really sure what getobs vs getinfo is supposed to do
     def _get_info(self):
-        return {"activeTargets": self.activeTargets
+        return {"position": self.position,
+                "prevPos": self.prevPos,
                 }
     
+    # return a random location in the state space
     def chooseRandomLocation(self):
         return self.np_random.integers(0, (self.numRows -1, self.numCols -1), size=2, dtype=int)
 
@@ -55,13 +73,12 @@ class ML_RL_Env(gym.Env):
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        # Choose the agent's location uniformly at random
+        # Choose the agent's start location at random
         self.position = self.chooseRandomLocation()
         self.prevPos = self.position
-        self.activeTargets = np.zeros((self.numCols, self.numRows))
-        self.targetValues = np.zeros((self.numCols, self.numRows))
+        self.numTargetSpawns = np.zeros((self.numCols, self.numRows)).transpose()
         self.currentTimeStep = 0
-
+        self.accuracyMatrix = np.array(Profile1Matrix).transpose()
         observation = self._get_obs()
         info = self._get_info()
 
@@ -70,29 +87,39 @@ class ML_RL_Env(gym.Env):
 
         return observation, info
     
-    def incrementReward(self, reward, position):
-        print(reward,position)
+    # get reward from traveling to a position
+    def getReward(self,position):
         x,y = position
-        self.targetValues[y-1][x-1]+=reward
-        print(self.targetValues)
+        threshold = self.accuracyMatrix[x][y]
+        if np.random.uniform(0, 1) > threshold:
+            return 1
+        return 0
 
+    # updates environment based on the action
     def step(self, action):
-        self.incrementReward(self.np_random.integers(0,1,endpoint=True), self.position)
+        # increment time step
+        self.currentTimeStep+=0.35
+
+        # update position
         self.prevPos = self.position
         self.position = action
-        self.spawnNum+=1
-        self.currentTimeStep+=0.35
-        x,y = action
-        self.activeTargets[y-1][x-1]+=1
 
+        # get reward from performing action
+        reward = self.getReward(self.position)
+
+        #increment the number of target spawns (debug purposes)
+        x,y = action
+        self.numTargetSpawns[x,y]+=1
+
+        # terminate condition
         terminated = (self.currentTimeStep >= self.episodeLength / self.timeStep)
-        reward = 1 if terminated else 0  # Binary sparse rewards
+        if terminated:
+            print("Number of target spawns per location:")
+            print(self.numTargetSpawns.transpose())
         observation = self._get_obs()
         info = self._get_info()
-
         if self.render_mode == "human":
             self._render_frame()
-
         return observation, reward, terminated, False, info
 
     def render(self):
@@ -111,7 +138,6 @@ class ML_RL_Env(gym.Env):
         canvas.fill((255, 255, 255))
         pix_row = self.window.get_rect().width / self.numRows
         pix_col = self.window.get_rect().height / self.numCols
-
         # current position
         pygame.draw.rect(
             canvas,
@@ -149,16 +175,14 @@ class ML_RL_Env(gym.Env):
                 width=3,
             )
         number_font = pygame.font.SysFont( None, 16 )
-
         if self.render_mode == "human":
             # The following line copies our drawings from `canvas` to the visible window
             self.window.blit(canvas, canvas.get_rect())
             for x in range(self.numRows):
                 for y in range(self.numCols):
-                    self.window.blit(number_font.render(str(int(self.activeTargets[y][x])), True, (255,0,0)), ((50*x)+5,(50*y)+5))
+                    self.window.blit(number_font.render(str(int(self.numTargetSpawns[x, y])), True, (255,0,0)), ((50*x)+5,(50*y)+5))
             pygame.event.pump()
             pygame.display.update()
-
             # We need to ensure that human-rendering occurs at the predefined framerate.
             # The following line will automatically add a delay to keep the framerate stable.
             self.clock.tick(self.metadata["render_fps"])
@@ -171,3 +195,13 @@ class ML_RL_Env(gym.Env):
       if self.window is not None:
         pygame.display.quit()
         pygame.quit()
+
+[[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.7, 0.7],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.7, 0.8, 0.7],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.6, 0.7, 0.6],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.7, 0.7, 0.7],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.6, 0.6],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.5, 0.4, 0.4],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.5, 0.4, 0.3, 0.3],
+ [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.6, 0.5, 0.3, 0.3]]
