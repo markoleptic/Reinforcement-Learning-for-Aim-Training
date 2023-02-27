@@ -11,13 +11,19 @@ Profile1Matrix = [[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.7, 0.6, 0.6, 0.6, 0.6],
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5],
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.7, 0.5, 0.4, 0.4, 0.4],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.3],
+                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.6, 0.5, 0.4, 0.0, 0.3],
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3]]
+
+Profile2Matrix = [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6],
+                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.5, 0.5],
+                  [ 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 0.7, 0.6, 0.4, 0.4],
+                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.8, 0.7, 0.4, 0.0, 0.3],
+                  [ 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.4, 0.3, 0.3]]
 
 class ML_RL_Env(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, numRows=17, numCols=9, timeStep = 0.35, episodeLength = 35000):
+    def __init__(self, render_mode=None, numRows=17, numCols=9, timeStep = 1, episodeLength = 35000):
         self.numRows = numRows
         self.numCols = numCols
         self.timeStep = timeStep
@@ -39,7 +45,7 @@ class ML_RL_Env(gym.Env):
         Could take this further and slowly increment the accuracy by 0.01 for each time they encounter
         the state and successfully shoot it (agent does not recieve reward).
         """
-        self.accuracyMatrix = np.zeros((17,9))
+        self.accuracyMatrix = np.zeros((self.numRows,self.numCols))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -78,7 +84,7 @@ class ML_RL_Env(gym.Env):
         self.prevPos = self.position
         self.numTargetSpawns = np.zeros((self.numCols, self.numRows)).transpose()
         self.currentTimeStep = 0
-        self.accuracyMatrix = np.array(Profile1Matrix).transpose()
+        self.accuracyMatrix = np.array(Profile2Matrix).transpose()
         observation = self._get_obs()
         info = self._get_info()
 
@@ -98,7 +104,7 @@ class ML_RL_Env(gym.Env):
     # updates environment based on the action
     def step(self, action):
         # increment time step
-        self.currentTimeStep+=0.35
+        self.currentTimeStep+=self.timeStep
 
         # update position
         self.prevPos = self.position
@@ -195,13 +201,3 @@ class ML_RL_Env(gym.Env):
       if self.window is not None:
         pygame.display.quit()
         pygame.quit()
-
-[[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.7, 0.7],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.7, 0.8, 0.7],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.6, 0.7, 0.6],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.7, 0.7, 0.7],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.6, 0.6],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.5],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.5, 0.4, 0.4],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.5, 0.4, 0.3, 0.3],
- [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.6, 0.5, 0.3, 0.3]]

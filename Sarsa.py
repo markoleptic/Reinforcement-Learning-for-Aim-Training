@@ -1,17 +1,17 @@
 import gymnasium as gym
 from gymnasium.spaces import Box, Dict, Discrete
 from gymnasium.utils.env_checker import check_env
+import matplotlib.pyplot as plt
 import numpy as np
 import ML_Env
 np.set_printoptions(threshold=np.inf, linewidth=140)
-rows = 17
-cols = 9
+rows = 10
+cols = 5
 # learning rate
 alpha = 0.1
 # discount/long-term reward factor
 gamma = 0.9
 epsilon = 1
-
 # the action to pass to the environment to take (position)
 action = np.array([0,0])
 
@@ -40,7 +40,6 @@ def getMaxActionIndex(Q, startPosition):
     """
     return(np.unravel_index(np.argmax(Q[startPosition]), Q.shape))
 
-# TODO: properly implement epsilon
 def getNextAction(prevPos):
     """
     Returns the next action (position) to take based on the policy implemented (epsilon).
@@ -72,10 +71,29 @@ def updateQTable(Q, prevPos, position, reward):
     """
     x1,y1 = prevPos 
     x2,y2 = position
+    x3,y3 = getNextAction(position)
+    next = qTable[x2,y2,x3,y3]
+    # newqValue(prevPos -> action -> position) = oldqValue + alpha(gamma * nextqValue(position -> nextPosition) - oldqValue)
+    qTable[x1,y1,x2,y2] = qTable[x1,y1,x2,y2] + alpha * (reward + gamma * next - qTable[x1,y1,x2,y2])
+    return getNextAction(position)
+
+def updateQTableQLearning(Q, prevPos, position, reward):
+    """
+    Q-Learning or sarsa, not 100% sure if correct or which one.
+    Updates the qTable by using the qfunction
+    Args:
+        Q: the state action table
+        prevPos: the previous agent position
+        position: the current agent position
+        reward: The reward recieved from taking action (position) from prevPos
+    """
+    x1,y1 = prevPos 
+    x2,y2 = position
     # optimal qvalue of the next state
     optimalNext = qTable[getMaxActionIndex(qTable,(x2,y2))]
-    # newqValue(prevPos -> action -> position) = oldqValue + alpha(gamma * nextqValue(position -> bestAction -> nextPosition) - oldqValue)
+    # newqValue(prevPos -> action -> position) = oldqValue + alpha(gamma * nextqValue(position -> nextPosition) - oldqValue)
     qTable[x1,y1,x2,y2] = qTable[x1,y1,x2,y2] + alpha * (reward + gamma * optimalNext - qTable[x1,y1,x2,y2])
+    return getNextAction(position)
 
 # -----------------------
 # --- experiment loop ---
@@ -83,25 +101,90 @@ def updateQTable(Q, prevPos, position, reward):
 
 # create ML_RL_Env environment, everything besides first parameter is optional
 # set render_mode to "human" to view the game
-env = gym.make('ML_Env/ML_RL_Env-v0', render_mode="rgb_array", numRows=17, numCols=9, timeStep = 0.35, episodeLength = 35000)
-
+env = gym.make('ML_Env/ML_RL_Env-v0', numRows=rows, numCols=cols, timeStep = 1, episodeLength = 10000)
 env.reset()
-terminated = False
-while not terminated:
-    # get the results from taking an action
-    observation, reward, terminated, truncated, info = env.step(action)
-    # update qTable using results from taking action
-    updateQTable(qTable, observation.get('prevPos'), observation.get('position'), reward)
-    action = getNextAction(observation.get('position'))
-    if terminated or truncated:
-        print("Higher q-values represent greater rewards from that position")
-        # only using transpose to make it more readable
-        # print(np.around(qTable[0,0].transpose(), 2))
-        # print('\n')
-        # print(np.around(qTable[8,4].transpose(), 2))
-        # print('\n')
-        # print(np.around(qTable[16,8].transpose(), 2))
-        # taking the mean values of the inner arrays
-        print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
-        break
-        observation, info = env.reset()
+rewards = np.array([])
+rewardcumulative = np.array([])
+cumulative = np.array([])
+while epsilon >= 0:
+    for index in range(100):
+        terminated = False
+        while not terminated:
+            # get the results from taking an action
+            observation, reward, terminated, truncated, info = env.step(action)
+            # update qTable using results from taking action
+            rewards = np.append(rewards,float(reward))
+            action = updateQTable(qTable, observation.get('prevPos'), observation.get('position'), reward)
+            if terminated or truncated:
+                # print("Higher q-values represent greater rewards from that position")
+                # # taking the mean values of the inner arrays
+                # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
+                qTable = np.zeros((rows,cols,rows,cols))
+                if rewardcumulative.size == 0:
+                    rewardcumulative = rewards
+                else:
+                    rewardcumulative = np.vstack([rewardcumulative, rewards])
+                rewards = np.array([])
+                env.reset()
+                break
+    if cumulative.size == 0:
+        cumulative = np.cumsum(rewardcumulative.mean(0),0)
+    else:
+        cumulative = np.vstack([cumulative, np.cumsum(rewardcumulative.mean(0),0)])
+    rewardcumulative = np.array([])
+    epsilon -=0.2
+
+font = {'weight' : 'bold'}
+plt.rc('font', **font)
+for item in cumulative:
+    plt.plot(item, label = "\u03B5 = " + str(round(epsilon, 1)))
+    epsilon-=0.2
+plt.xlabel("Time Step in Episode")
+plt.ylabel("Cumulative Avg Reward across All Eps")
+plt.legend()
+plt.show()
+
+epsilon = 1
+env.reset()
+rewards = np.array([])
+rewardcumulative = np.array([])
+cumulative = np.array([])
+while epsilon >= 0:
+    for index in range(100):
+        terminated = False
+        while not terminated:
+            # get the results from taking an action
+            observation, reward, terminated, truncated, info = env.step(action)
+            # update qTable using results from taking action
+            rewards = np.append(rewards,float(reward))
+            action = updateQTable(qTable, observation.get('prevPos'), observation.get('position'), reward)
+            if terminated or truncated:
+                # print("Higher q-values represent greater rewards from that position")
+                # # taking the mean values of the inner arrays
+                # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
+                qTable = np.zeros((rows,cols,rows,cols))
+                if rewardcumulative.size == 0:
+                    rewardcumulative = rewards
+                else:
+                    rewardcumulative = np.vstack([rewardcumulative, rewards])
+                rewards = np.array([])
+                env.reset()
+                break
+    if cumulative.size == 0:
+        cumulative = np.cumsum(rewardcumulative.mean(0),0)
+    else:
+        cumulative = np.vstack([cumulative, np.cumsum(rewardcumulative.mean(0),0)])
+    print(cumulative)
+    rewardcumulative = np.array([])
+    epsilon -=0.2
+
+epsilon = 1.0
+font = {'weight' : 'bold'}
+plt.rc('font', **font)
+for item in cumulative:
+    plt.plot(item, label = "\u03B5 = " + str(round(epsilon, 1)))
+    epsilon-=0.2
+plt.xlabel("Time Step in Episode")
+plt.ylabel("Cumulative Avg Reward across All Eps")
+plt.legend()
+plt.show()
