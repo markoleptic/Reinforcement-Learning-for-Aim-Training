@@ -15,10 +15,14 @@ epsilon = 1
 # the action to pass to the environment to take (position)
 action = np.array([0,0])
 
+NumberOfIterations = 10
+
 # qTable: an array of the size of the grid (outer) where each element also has size of the grid (inner) (17x9)x(17x9)
 # each element in the inner contains the q-value for starting at outer state and moving to inner state
 qTable = np.zeros((rows,cols,rows,cols))
 
+q_table_sum_QLearning = np.zeros((rows, cols))
+q_table_sum_SarsaLearning = np.zeros((rows, cols))
 """
 If you're curious what 4-d arrays looks like, uncomment this section
 """
@@ -30,6 +34,21 @@ If you're curious what 4-d arrays looks like, uncomment this section
 # print(qTable[0,0])
 # print(qTable[0,0,0])
 # print(qTable.transpose())
+
+def Average_And_Visualize_QTable(QTableSum,QTableDivide,title):
+    avg_qTable = np.divide(QTableSum, QTableDivide)
+    
+    cmap = plt.cm.get_cmap('Greens')
+    plt.title(title)
+    plt.imshow(avg_qTable.transpose(), cmap=cmap)
+    plt.colorbar()
+    plt.show()
+
+def QTableSum(QTable, QTableSum):
+    for i in range(rows):
+        for j in range(cols):
+            QTableSum = np.add(QTableSum,QTable[i][j])
+    return QTableSum
 
 def getMaxActionIndex(Q, startPosition):
     """
@@ -107,7 +126,7 @@ rewards = np.array([])
 rewardcumulative = np.array([])
 cumulative = np.array([])
 while epsilon >= 0:
-    for index in range(100):
+    for index in range(NumberOfIterations):
         terminated = False
         while not terminated:
             # get the results from taking an action
@@ -119,6 +138,8 @@ while epsilon >= 0:
                 # print("Higher q-values represent greater rewards from that position")
                 # # taking the mean values of the inner arrays
                 # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
+                #Visualize_QTable(qTable,"Q-Learning Q-Table")
+                q_table_sum_QLearning = QTableSum(qTable, q_table_sum_QLearning)
                 qTable = np.zeros((rows,cols,rows,cols))
                 if rewardcumulative.size == 0:
                     rewardcumulative = rewards
@@ -150,7 +171,7 @@ rewards = np.array([])
 rewardcumulative = np.array([])
 cumulative = np.array([])
 while epsilon >= 0:
-    for index in range(100):
+    for index in range(NumberOfIterations):
         terminated = False
         while not terminated:
             # get the results from taking an action
@@ -162,6 +183,7 @@ while epsilon >= 0:
                 # print("Higher q-values represent greater rewards from that position")
                 # # taking the mean values of the inner arrays
                 # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
+                q_table_sum_SarsaLearning = QTableSum(qTable, q_table_sum_SarsaLearning)
                 qTable = np.zeros((rows,cols,rows,cols))
                 if rewardcumulative.size == 0:
                     rewardcumulative = rewards
@@ -188,3 +210,6 @@ plt.xlabel("Time Step in Episode")
 plt.ylabel("Cumulative Avg Reward across All Eps")
 plt.legend()
 plt.show()
+qTableDivide = np.full((rows,cols), rows*cols*NumberOfIterations)
+Average_And_Visualize_QTable(q_table_sum_QLearning,qTableDivide,"QTable of Q-Learning")
+Average_And_Visualize_QTable(q_table_sum_SarsaLearning,qTableDivide,"QTable of Sarsa-Learning")
