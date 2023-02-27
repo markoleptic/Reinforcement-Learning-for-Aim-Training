@@ -11,7 +11,7 @@ cols = 5
 alpha = 0.1
 # discount/long-term reward factor
 gamma = 0.9
-epsilon = 1
+epsilon = 0.9
 # the action to pass to the environment to take (position)
 action = np.array([0,0])
 
@@ -41,7 +41,7 @@ def Average_And_Visualize_QTable(QTableSum,QTableDivide,title):
     cmap = plt.cm.get_cmap('Greens')
     plt.title(title)
     plt.imshow(avg_qTable.transpose(), cmap=cmap)
-    plt.colorbar()
+    plt.colorbar(shrink = 0.5)
     plt.show()
 
 def QTableSum(QTable, QTableSum):
