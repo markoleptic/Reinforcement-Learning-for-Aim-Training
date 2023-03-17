@@ -119,9 +119,9 @@ class ML_RL_Env(gym.Env):
 
         # terminate condition
         terminated = (self.currentTimeStep >= self.episodeLength / self.timeStep)
-        if terminated:
-            print("Number of target spawns per location:")
-            print(self.numTargetSpawns.transpose())
+        # if terminated:
+        #     print("Number of target spawns per location:")
+        #     print(self.numTargetSpawns.transpose())
         observation = self._get_obs()
         info = self._get_info()
         if self.render_mode == "human":

@@ -15,7 +15,7 @@ epsilon = 1
 # the action to pass to the environment to take (position)
 action = np.array([0,0])
 
-NumberOfIterations = 10
+NumberOfIterations = 100
 
 # qTable: an array of the size of the grid (outer) where each element also has size of the grid (inner) (17x9)x(17x9)
 # each element in the inner contains the q-value for starting at outer state and moving to inner state
@@ -37,7 +37,6 @@ If you're curious what 4-d arrays looks like, uncomment this section
 
 def Average_And_Visualize_QTable(QTableSum,QTableDivide,title):
     avg_qTable = np.divide(QTableSum, QTableDivide)
-    
     cmap = plt.cm.get_cmap('Greens')
     plt.title(title)
     plt.imshow(avg_qTable.transpose(), cmap=cmap)
@@ -178,7 +177,7 @@ while epsilon >= 0:
             observation, reward, terminated, truncated, info = env.step(action)
             # update qTable using results from taking action
             rewards = np.append(rewards,float(reward))
-            action = updateQTable(qTable, observation.get('prevPos'), observation.get('position'), reward)
+            action = updateQTableQLearning(qTable, observation.get('prevPos'), observation.get('position'), reward)
             if terminated or truncated:
                 # print("Higher q-values represent greater rewards from that position")
                 # # taking the mean values of the inner arrays
