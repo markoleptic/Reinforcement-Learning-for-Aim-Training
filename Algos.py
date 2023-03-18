@@ -8,6 +8,9 @@ import ML_Env
 np.set_printoptions(threshold=np.inf, linewidth=140)
 
 class Algos:
+    """
+    Class that updates qTable values, implements Sarsa and QLearning algorithms
+    """
     def __init__(self, numRows=10, numCols=5, alpha=0.1, gamma=0.9, epsilon=1):
         # size of grid
         self.rows = numRows

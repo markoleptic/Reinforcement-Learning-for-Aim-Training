@@ -65,14 +65,8 @@ qTableDivide = np.full((algos.rows, algos.cols), algos.rows * algos.cols * Numbe
 algos.Average_And_Visualize_QTable(algos.q_table_sum_QLearning, qTableDivide, "QTable of Q-Learning")
 algos.Average_And_Visualize_QTable(algos.q_table_sum_SarsaLearning, qTableDivide, "QTable of Sarsa-Learning")
 
-# print("Higher q-values represent greater rewards from that position")
-# # taking the mean values of the inner arrays
 # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
 # Visualize_QTable(qTable,"Q-Learning Q-Table")
-
-"""
-If you're curious what 4-d arrays looks like, uncomment this section
-"""
 # qTable[0,0,0,0] = 9
 # print(qTable[0,0])
 # print(qTable[0,0,0])
