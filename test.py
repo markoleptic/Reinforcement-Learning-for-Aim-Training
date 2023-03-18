@@ -4,5 +4,5 @@ def file_modified():
     print("File Modified!")
     return False
 
-fileModifiedHandler = FileModified(r"U:/UnrealGameBuilds/Debug/Windows/BeatShot/AccuracyMatrix.csv", file_modified)
+fileModifiedHandler = FileModified(r"test file.txt", file_modified)
 fileModifiedHandler.start()
