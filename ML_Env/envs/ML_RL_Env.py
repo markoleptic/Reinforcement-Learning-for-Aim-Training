@@ -98,7 +98,7 @@ class ML_RL_Env(gym.Env):
     def getReward(self,position):
         x,y = position
         threshold = self.accuracyMatrix[x][y]
-        return -threshold
+        # return -threshold
         if np.random.uniform(0, 1) > threshold:
             return 0
         return -1

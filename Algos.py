@@ -132,8 +132,8 @@ class Algos:
         """
         # action and state_2 are the same since we are choosing locations anywhere on a grid
         # previous prediction
-        predict = self.qTable[*tuple(state), *tuple(action)]
+        predict = self.qTable[*state, *action]
         # optimal Qvalue of the next state, always greedy
-        q_Max = self.qTable[*tuple(state_2), *self.getMaxActionIndex(tuple(action_2))]
+        q_Max = self.qTable[*state_2, *self.getMaxActionIndex(action_2)]
         target = reward + self.gamma * q_Max
-        self.qTable[*tuple(state), *tuple(action)] = self.qTable[*tuple(state), *tuple(action)] + self.alpha * (target - predict)
+        self.qTable[*state, *action] = self.qTable[*state, *action] + self.alpha * (target - predict)
