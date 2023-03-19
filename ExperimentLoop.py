@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import ML_Env
 
-algos = Algos(numRows=10, numCols=5, alpha=0.1, gamma=0.9, epsilon=1)
-env = gym.make("ML_Env/ML_RL_Env-v0", numRows=algos.rows, numCols=algos.cols, timeStep=1, episodeLength=100)
+algos = Algos(numRows=11, numCols=5, alpha=0.5, gamma=0.9, epsilon=0.9)
+env = gym.make("ML_Env/ML_RL_Env-v0", numRows=algos.rows, numCols=algos.cols, timeStep=1, episodeLength=1000)
 
 # -----------------------
 # --- experiment loop ---
@@ -15,55 +15,83 @@ env = gym.make("ML_Env/ML_RL_Env-v0", numRows=algos.rows, numCols=algos.cols, ti
 
 # Sarsa
 
+# initialize S
+state = (5,3)
+
+# Choose A from S using epsilon-greedy policy
+action = algos.getNextAction(state, algos.epsilon)
+
 totalCumRewards = np.array([])
-epsilon = 1
-action = np.array([0, 0])
-NumberOfIterations = 100
-while epsilon >= 0:
-    epsilonCumRewards = np.array([])
-    for index in range(NumberOfIterations):
-        env.reset()
-        terminated = False
-        episodeRewards = np.array([])
-        while not terminated:
-            observation, reward, terminated, truncated, info = env.step(action)
-            action = algos.updateQTable_Sarsa(observation.get("prevPos"), observation.get("position"), reward, epsilon)
-            episodeRewards = np.append(episodeRewards, float(reward))
-            if terminated or truncated:
-                algos.q_table_sum_SarsaLearning = algos.updateQTableSum(algos.q_table_sum_SarsaLearning)
-                epsilonCumRewards = (episodeRewards if (epsilonCumRewards.size == 0) else (np.vstack([epsilonCumRewards, episodeRewards])))
-                break
-    totalCumRewards = (np.cumsum(epsilonCumRewards.mean(0), 0) if (totalCumRewards.size == 0) else np.vstack([totalCumRewards, np.cumsum(epsilonCumRewards.mean(0), 0)]))
-    epsilon -= 0.2
-algos.plotRewards(totalCumRewards)
+numEpisodes = 500
+episodeCumRewards = np.array([])
+for index in range(numEpisodes):
+    env.reset()
+    terminated = False
+    episodeRewards = np.array([])
+    algos.alpha = 1 - (float(index)/numEpisodes)
+    while not terminated:
+        observation, reward, terminated, truncated, info = env.step(action)
+        episodeRewards = np.append(episodeRewards, float(reward))
+        state = tuple(observation.get("prevPos"))
+        state_2 = tuple(observation.get("position"))
+
+        # Choose A from S using epsilon-greedy policy
+        action_2 = algos.getNextAction(state_2, algos.epsilon)
+
+        algos.updateQTable_Sarsa(state, action, state_2, action_2, reward, algos.epsilon)
+        
+        action = action_2
+        state = state_2
+        if terminated or truncated:
+            algos.q_table_sum_SarsaLearning = algos.updateQTableSum(algos.q_table_sum_SarsaLearning)
+            episodeCumRewards = np.append(episodeCumRewards, (episodeRewards.sum(0)))
+            break
+algos.plotRewards(episodeCumRewards, False, algos.epsilon)
+qTableDivide = np.full((algos.rows, algos.cols), algos.rows * algos.cols * numEpisodes)
+algos.Average_And_Visualize_QTable(algos.q_table_sum_SarsaLearning, qTableDivide, "QTable of Sarsa-Learning")
 
 # Q-Learning
 
-epsilon = 1
-totalCumRewards = np.array([])
-action = np.array([0, 0])
-while epsilon >= 0:
-    epsilonCumRewards = np.array([])
-    for index in range(NumberOfIterations):
-        env.reset()
-        terminated = False
-        episodeRewards = np.array([])
-        qTable = np.zeros((algos.rows, algos.cols, algos.rows, algos.cols))
-        while not terminated:
-            observation, reward, terminated, truncated, info = env.step(action)
-            action = algos.updateQTableQLearning(observation.get("prevPos"), observation.get("position"), reward, epsilon)
-            episodeRewards = np.append(episodeRewards, float(reward))
-            if terminated or truncated:
-                algos.q_table_sum_QLearning = algos.updateQTableSum(algos.q_table_sum_QLearning)
-                epsilonCumRewards = (episodeRewards if (epsilonCumRewards.size == 0) else (np.vstack([epsilonCumRewards, episodeRewards])))
-                break
-    totalCumRewards = (np.cumsum(epsilonCumRewards.mean(0), 0) if (totalCumRewards.size == 0) else np.vstack([totalCumRewards, np.cumsum(epsilonCumRewards.mean(0), 0)]))
-    epsilon -= 0.2
-algos.plotRewards(totalCumRewards)
+algos = Algos(numRows=11, numCols=5, alpha=0.5, gamma=0.9, epsilon=0.9)
 
-qTableDivide = np.full((algos.rows, algos.cols), algos.rows * algos.cols * NumberOfIterations)
+# initialize S
+state = (5,3)
+
+# Choose A from S using epsilon-greedy policy
+action = algos.getNextAction(state, algos.epsilon)
+
+totalCumRewards = np.array([])
+numEpisodes = 500
+episodeCumRewards = np.array([])
+for index in range(numEpisodes):
+    env.reset()
+    terminated = False
+    episodeRewards = np.array([])
+    algos.alpha = 1 - (float(index)/numEpisodes)
+    while not terminated:
+        observation, reward, terminated, truncated, info = env.step(action)
+        episodeRewards = np.append(episodeRewards, float(reward))
+        state = tuple(observation.get("prevPos"))
+        state_2 = tuple(observation.get("position"))
+
+        action = state_2
+        # Choose A from S using epsilon-greedy policy
+        action_2 = algos.getNextAction(state_2, algos.epsilon)
+
+        algos.updateQTable_QLearning(state, action, state_2, action_2, reward, algos.epsilon)
+        
+        state = state_2
+        if terminated or truncated:
+            algos.q_table_sum_QLearning = algos.updateQTableSum(algos.q_table_sum_QLearning)
+            episodeCumRewards = np.append(episodeCumRewards, (episodeRewards.sum(0)))
+            break
+algos.plotRewards(episodeCumRewards, False, algos.epsilon)
+qTableDivide = np.full((algos.rows, algos.cols), algos.rows * algos.cols * numEpisodes)
 algos.Average_And_Visualize_QTable(algos.q_table_sum_QLearning, qTableDivide, "QTable of Q-Learning")
-algos.Average_And_Visualize_QTable(algos.q_table_sum_SarsaLearning, qTableDivide, "QTable of Sarsa-Learning")
+
+# algos.plotRewards(episodeRewards.cumsum(0), False, epsilon)
+# totalCumRewards = (np.cumsum(episodeCumRewards.mean(0), 0) if (totalCumRewards.size == 0) else np.vstack([totalCumRewards, np.cumsum(episodeCumRewards.mean(0), 0)]))
+# episodeCumRewards = (episodeRewards if (episodeCumRewards.size == 0) else (np.vstack([episodeCumRewards, episodeRewards])))
 
 # print(np.around(np.mean(np.mean(qTable.transpose(),2),2), 2))
 # Visualize_QTable(qTable,"Q-Learning Q-Table")

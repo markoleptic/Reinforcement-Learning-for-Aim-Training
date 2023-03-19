@@ -14,11 +14,11 @@ Profile1Matrix = [[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.6, 0.5, 0.4, 0.0, 0.3],
                   [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3]]
 
-Profile2Matrix = [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6],
-                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.5, 0.5],
-                  [ 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 0.7, 0.6, 0.4, 0.4],
-                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.8, 0.7, 0.4, 0.0, 0.3],
-                  [ 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.4, 0.3, 0.3]]
+Profile2Matrix = [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6, 0.6],
+                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.5, 0.5, 0.6],
+                  [ 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 0.7, 0.6, 0.4, 0.4, 0.5],
+                  [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.8, 0.7, 0.4, 0.0, 0.3, 0.3],
+                  [ 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.7, 0.4, 0.3, 0.3, 0.4]]
 
 class ML_RL_Env(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
@@ -69,11 +69,12 @@ class ML_RL_Env(gym.Env):
     def _get_info(self):
         return {"position": self.position,
                 "prevPos": self.prevPos,
+                "timestep": self.currentTimeStep,
                 }
     
     # return a random location in the state space
     def chooseRandomLocation(self):
-        return self.np_random.integers(0, (self.numRows -1, self.numCols -1), size=2, dtype=int)
+        return np.array([np.random.randint(0, self.numRows), np.random.randint(0, self.numCols)])
 
     def reset(self, seed=None, options=None):
         # We need the following line to seed self.np_random
@@ -97,9 +98,10 @@ class ML_RL_Env(gym.Env):
     def getReward(self,position):
         x,y = position
         threshold = self.accuracyMatrix[x][y]
+        return -threshold
         if np.random.uniform(0, 1) > threshold:
-            return 1
-        return 0
+            return 0
+        return -1
 
     # updates environment based on the action
     def step(self, action):

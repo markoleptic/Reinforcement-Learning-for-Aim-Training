@@ -10,7 +10,7 @@ class FileModified():
     def start(self):
             try:
                 while (True):
-                    time.sleep(0.5)
+                    time.sleep(0.1)
                     modified = os.path.getmtime(self.file_path)
                     if modified != self.modifiedOn:
                         self.modifiedOn = modified
