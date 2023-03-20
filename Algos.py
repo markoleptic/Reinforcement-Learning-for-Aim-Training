@@ -30,7 +30,7 @@ class Algos:
         if (qTableFileLoc == ""):
             self.qTable = np.zeros((self.rows, self.cols, self.rows, self.cols))
         else:
-            self.qTable = np.loadtxt(qTableFileLoc)
+            self.qTable = np.load(qTableFileLoc)
         
         self.q_table_sum_QLearning = np.zeros((self.rows, self.cols))
         self.q_table_sum_SarsaLearning = np.zeros((self.rows, self.cols))
@@ -49,9 +49,8 @@ class Algos:
         return result
 
     def plotRewards(self, cumulativeRewardArray, bVaryEpsilon = True, epsilon = 1):
-        # print(cumulativeRewardArray)
         if bVaryEpsilon == False:
-            plt.plot(cumulativeRewardArray, label="\u03B5 = " + str(round(epsilon, 1)))
+            plt.plot(cumulativeRewardArray, label="Reward Received per Episode")
             plt.plot(self.SMA(cumulativeRewardArray, 50), label="Simple Moving Average")
         else:
             for item in cumulativeRewardArray:
@@ -74,7 +73,7 @@ class Algos:
         np.save(path, self.qTable)
 
     def loadQTable(self, path):
-        self.qTable = np.load(path)
+        self.qTable = np.load(path, encoding="utf8")
         return self.qTable
 
     def getMaxActionIndex(self, startPosition):
