@@ -1,100 +1,91 @@
 from Algos import Algos
-import gymnasium as gym
-from gymnasium.spaces import Box, Dict, Discrete
-from gymnasium.utils.env_checker import check_env
 import matplotlib.pyplot as plt
 import numpy as np
-import ML_Env
-from FileModHandler import FileModified
+import os
+import time
+import traceback
 
-# Sarsa
+class FileModified():
 
-sarsa = Algos("QTable_Sarsa.npy", numRows=11, numCols=5, alpha=0.8, gamma=0.9, epsilon=0.8)
-# initialize S
-state = (5,3)
+    def __init__(self, file_path, algo_name):
+        self.file_path = file_path
+        self.callback = self.file_modified
+        self.modifiedOn = os.path.getmtime(file_path)
+        self.algo_name = algo_name
+        if self.algo_name == "sarsa":
+            self.algo = Algos("QTable_Sarsa_Live.npy", numRows=11, numCols=5, alpha=0.8, gamma=0.9, epsilon=0.5)
+        elif self.algo_name == "qlearning":
+            self.algo = Algos("QTable_QLearning.npy", numRows=11, numCols=5, alpha=0.8, gamma=0.9, epsilon=0.5)
+        # initialize S
+        self.state = (5,3)
+        # Choose A from S using epsilon-greedy policy
+        self.action = self.algo.getNextAction(self.state, self.algo.epsilon)
 
-# Choose A from S using epsilon-greedy policy
-action = sarsa.getNextAction(state, sarsa.epsilon)
-
-# Update the QTable after detected a file change, which means action was taken
-def file_modified():
-    # Oberve R, S'
-    results = np.loadtxt("Accuracy.csv", delimiter=',')
-    checkEndEpisode(results, sarsa)
-
-    # results include the previous state, in case ordering was changed in game
-    state = (int(results[0]), int(results[1]))
-    state_2 = (int(results[2]), int(results[3]))
-    action = state_2
-    reward = int(results[4])
-    sarsa.episodeRewards = np.append(sarsa.episodeRewards, float(reward))
-
-    # Choose A from S using epsilon-greedy policy
-    action_2 = sarsa.getNextAction(state_2, sarsa.epsilon)
-
-    # update QTable
-    sarsa.updateQTable_Sarsa(state, action, state_2, action_2, sarsa.epsilon)
-
-    # Push next spawn location to game
-    printNextSpawnLocation("SpawnLocation.txt", action_2)
-
-    action = action_2
-    state = state_2
-    sarsa.saveQTable("QTable_Sarsa.npy")
-    return False
-
-def checkEndEpisode(results, AlgoClass):
-    if (results.__len__() == 0):
-        qTableDivide = np.full((AlgoClass.rows, AlgoClass.cols), AlgoClass.rows * AlgoClass.cols)
-        if AlgoClass == sarsa:
-            AlgoClass.q_table_sum_SarsaLearning = AlgoClass.updateQTableSum(AlgoClass.q_table_sum_SarsaLearning)
-            AlgoClass.Average_And_Visualize_QTable(AlgoClass.q_table_sum_SarsaLearning, qTableDivide, "QTable of Sarsa-Learning")
+    def start(self):
+            try:
+                while (True):
+                    time.sleep(0.1)
+                    modified = os.path.getmtime(self.file_path)
+                    if modified != self.modifiedOn:
+                        self.modifiedOn = modified
+                        if self.callback():
+                            break
+            except Exception as e:
+                print(traceback.format_exc())
+                time.sleep(0.1)
+                self.start()
+    
+    # Update the QTable after detected a file change, which means action was taken
+    def file_modified(self):
+        # Oberve R, S'
+        results = np.loadtxt("Accuracy.csv", delimiter=',')
+        self.checkEndEpisode(results)
+        # results include the previous state, in case ordering was changed in game
+        self.state = (int(results[0]), int(results[1]))
+        state_2 = (int(results[2]), int(results[3]))
+        self.action = state_2
+        reward = int(results[4])
+        if (reward == 0):
+            print("Results read from Accuracy.csv: ", self.state, state_2, " Hit")
+            reward = -1
         else:
-            AlgoClass.q_table_sum_QLearning = AlgoClass.updateQTableSum(AlgoClass.q_table_sum_QLearning)
-            AlgoClass.Average_And_Visualize_QTable(AlgoClass.q_table_sum_QLearning, qTableDivide, "QTable of Q-Learning")
-        AlgoClass.plotRewards(AlgoClass.episodeRewards.cumsum(0), False, AlgoClass.epsilon)
-        exit()
+            print("Results read from Accuracy.csv: ", self.state, state_2, " Miss")
+            reward = 0
+        self.algo.episodeRewards = np.append(self.algo.episodeRewards, float(reward))
+        # Choose A from S using epsilon-greedy policy
+        action_2 = self.algo.getNextAction(state_2, self.algo.epsilon)
+        # update QTable
+        if self.algo_name == "sarsa":
+            self.algo.updateQTable_Sarsa(self.state, self.action, state_2, action_2, reward, self.algo.epsilon)
+        elif self.algo_name == "qlearning":
+            self.algo.updateQTable_QLearning(self.state, self.action, state_2, action_2, reward, self.algo.epsilon)
+        # Push next spawn location to game
+        self.printNextSpawnLocation("SpawnLocation.txt", action_2)
+        self.action = action_2
+        self.state = state_2
+        if self.algo_name == "sarsa":
+            self.algo.saveQTable("QTable_Sarsa_Live.npy")
+        elif self.algo_name == "qlearning":
+            self.algo.saveQTable("QTable_QLearning_Live.npy")
+        return False
 
-# This function saves a new spawn location to "SpawnLocation.txt" after updating the QTable in response to a file change
-def printNextSpawnLocation(path, location):
-    np.savetxt(path, location, delimiter=",")
-    print("Next Spawn Location written to SpawnLocation.txt: ", location)
-
+    def checkEndEpisode(self, results):
+        if (results.__len__() == 0):
+            qTableDivide = np.full((self.algo.rows, self.algo.cols), self.algo.rows * self.algo.cols)
+            if self.algo_name == "sarsa":
+                self.algo.q_table_sum_SarsaLearning = self.algo.updateQTableSum(self.algo.q_table_sum_SarsaLearning)
+                self.algo.Average_And_Visualize_QTable(self.algo.q_table_sum_SarsaLearning, qTableDivide, "QTable of Sarsa-Learning")
+            elif self.algo_name == "qlearning":
+                self.algo.q_table_sum_QLearning = self.algo.updateQTableSum(self.algo.q_table_sum_QLearning)
+                self.algo.Average_And_Visualize_QTable(self.algo.q_table_sum_QLearning, qTableDivide, "QTable of Q-Learning")
+            self.algo.plotRewards(self.algo.episodeRewards.cumsum(0), False, self.algo.epsilon)
+            exit()
+            
+    # This function saves a new spawn location to "SpawnLocation.txt" after updating the QTable in response to a file change
+    def printNextSpawnLocation(self, path, location):
+        np.savetxt(path, location, delimiter=",")
+        print("Next Spawn Location written to SpawnLocation.txt: ", location)
+    
 # Start monitoring for file changes
-fileModifiedHandler = FileModified(r"Accuracy.csv", file_modified)
+fileModifiedHandler = FileModified(r"Accuracy.csv", algo_name="sarsa")
 fileModifiedHandler.start()
-
-
-# Q-Learning
-
-qlearning = Algos("QTable_QLearning.npy", numRows=11, numCols=5, alpha=0.8, gamma=0.9, epsilon=0.8)
-# initialize S
-state = (5,3)
-
-# Choose A from S using epsilon-greedy policy
-action = qlearning.getNextAction(state, qlearning.epsilon)
-
-# Update the QTable after detected a file change, which means action was taken
-def file_modified():
-    # Oberve R, S'
-    results = np.loadtxt("Accuracy.csv", delimiter=',')
-    checkEndEpisode(results, qlearning)
-
-    # results include the previous state, in case ordering was changed in game
-    state = (int(results[0]), int(results[1]))
-    state_2 = (int(results[2]), int(results[3]))
-    action = state_2
-    reward = int(results[4])
-    qlearning.episodeRewards = np.append(qlearning.episodeRewards, float(reward))
-
-    # Choose A from S using epsilon-greedy policy
-    action_2 = qlearning.getNextAction(state_2, qlearning.epsilon)
-
-    # update QTable
-    qlearning.updateQTable_QLearning(state, action, state_2, action_2, qlearning.epsilon)
-
-    # Push next spawn location to game
-    printNextSpawnLocation("SpawnLocation.txt", action_2)
-    state = state_2
-    qlearning.saveQTable("QTable_QLearning.npy")
-    return False

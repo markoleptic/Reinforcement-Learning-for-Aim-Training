@@ -12,7 +12,7 @@ class Algos:
     """
     Class that updates qTable values, implements Sarsa and QLearning algorithms
     """
-    def __init__(self, qTableFileLoc = "", numRows=11, numCols=5, alpha=0.1, gamma=0.9, epsilon=1):
+    def __init__(self, qTableFileLoc = "", numRows=11, numCols=5, alpha=0.1, gamma=0.9, epsilon=0.9):
         # size of grid
         self.rows = numRows
         self.cols = numCols

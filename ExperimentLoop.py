@@ -167,7 +167,7 @@ def SMA(data, step):
     result = np.convolve(w, data, mode="valid")
     return result
 
-#print("RandomTotalRewards",np.sum(RandomTotalRewards,0))
+print("RandomTotalRewards",np.sum(RandomTotalRewards,0))
 print("SarsaTotalRewards",np.sum(SarsaTotalRewards,0))
 print("SarsaEpsilonHalfTotalRewards",np.sum(SarsaEpsilonHalfTotalRewards,0))
 print("QLearningTotalRewards",np.sum(QLearningTotalRewards,0))

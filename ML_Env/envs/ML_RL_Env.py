@@ -4,17 +4,7 @@ from gymnasium.utils.env_checker import check_env
 import pygame
 import numpy as np
 
-Profile1Matrix = [[0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.7, 0.7],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.8, 0.7, 0.8, 0.7],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.6, 0.6, 0.7, 0.6],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.8, 0.7, 0.7, 0.7, 0.7],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9, 0.7, 0.6, 0.6, 0.6, 0.6],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.6, 0.5, 0.5, 0.5, 0.5],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 1.0, 1.0, 1.0, 1.0, 1.0, 0.8, 0.7, 0.5, 0.4, 0.4, 0.4],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.8, 0.6, 0.5, 0.4, 0.0, 0.3],
-                  [0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.5, 0.4, 0.3, 0.3]]
-
-Profile2Matrix = [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6, 0.6],
+ProfileMatrix =  [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6, 0.6],
                   [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.5, 0.5, 0.6],
                   [ 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 0.7, 0.6, 0.4, 0.4, 0.5],
                   [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.8, 0.7, 0.4, 0.0, 0.3, 0.3],
@@ -23,7 +13,7 @@ Profile2Matrix = [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6, 0.6],
 class ML_RL_Env(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, numRows=17, numCols=9, timeStep = 1, episodeLength = 35000):
+    def __init__(self, render_mode=None, numRows=11, numCols=5, timeStep = 1, episodeLength = 300):
         self.numRows = numRows
         self.numCols = numCols
         self.timeStep = timeStep
@@ -85,7 +75,7 @@ class ML_RL_Env(gym.Env):
         self.prevPos = self.position
         self.numTargetSpawns = np.zeros((self.numCols, self.numRows)).transpose()
         self.currentTimeStep = 0
-        self.accuracyMatrix = np.array(Profile2Matrix).transpose()
+        self.accuracyMatrix = np.array(ProfileMatrix).transpose()
         observation = self._get_obs()
         info = self._get_info()
 
