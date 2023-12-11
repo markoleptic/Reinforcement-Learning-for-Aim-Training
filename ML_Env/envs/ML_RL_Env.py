@@ -3,6 +3,7 @@ from gymnasium.spaces import Box, Dict, Discrete
 from gymnasium.utils.env_checker import check_env
 import pygame
 import numpy as np
+import pandas as pd
 
 ProfileMatrix =  [[ 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.7, 0.6, 0.6, 0.6],
                   [ 0.8, 0.8, 0.8, 0.9, 1.0, 0.9, 0.8, 0.7, 0.5, 0.5, 0.6],
@@ -35,6 +36,8 @@ class ML_RL_Env(gym.Env):
         Could take this further and slowly increment the accuracy by 0.01 for each time they encounter
         the state and successfully shoot it (agent does not recieve reward).
         """
+        imported_matrix = pd.read_csv("ML_Env/envs/accuracy_matrix.csv", header=None).values
+        self.profile_matrix = np.array(imported_matrix)
         self.accuracyMatrix = np.zeros((self.numRows,self.numCols))
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -75,11 +78,12 @@ class ML_RL_Env(gym.Env):
         self.prevPos = self.position
         self.numTargetSpawns = np.zeros((self.numCols, self.numRows)).transpose()
         self.currentTimeStep = 0
-        self.accuracyMatrix = np.array(ProfileMatrix).transpose()
+
+        self.accuracyMatrix = self.profile_matrix.transpose()
         observation = self._get_obs()
         info = self._get_info()
 
-        if self.render_mode == "human":
+        if self.render_mode != None:
             self._render_frame()
 
         return observation, info
@@ -116,20 +120,22 @@ class ML_RL_Env(gym.Env):
         #     print(self.numTargetSpawns.transpose())
         observation = self._get_obs()
         info = self._get_info()
-        if self.render_mode == "human":
+        if self.render_mode != None:
             self._render_frame()
         return observation, reward, terminated, False, info
 
     def render(self):
-        if self.render_mode == "rgb_array":
+        if self.render_mode != None:
             return self._render_frame()
 
     def _render_frame(self):
-        if self.window is None and self.render_mode == "human":
+        if self.render_mode == None:
+            return
+        if self.window is None:
             pygame.init()
             pygame.display.init()
             self.window = pygame.display.set_mode(( 50*self.numRows, 50*self.numCols))
-        if self.clock is None and self.render_mode == "human":
+        if self.clock is None:
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface(( 50*self.numRows, 50*self.numCols))
@@ -140,19 +146,13 @@ class ML_RL_Env(gym.Env):
         pygame.draw.rect(
             canvas,
             (255, 0, 0),
-            pygame.Rect(
-                self.prevPos*(pix_row,pix_col),
-                (pix_row, pix_col),
-            ),
+            pygame.Rect((self.prevPos[0] * pix_row, self.prevPos[1] * pix_col), (pix_row, pix_col))
         )
         # prev position
         pygame.draw.rect(
             canvas,
             (0, 255, 0),
-            pygame.Rect(
-                self.position*(pix_row,pix_col),
-                (pix_row, pix_col),
-            ),
+            pygame.Rect((self.position[0] * pix_row, self.position[1] * pix_col), (pix_row, pix_col))
         )
         # horizontal lines
         for x in range(int(pix_row) + 1):
