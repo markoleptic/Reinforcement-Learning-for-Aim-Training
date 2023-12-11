@@ -1,6 +1,8 @@
 # Reinforcement Learning for Aim Training
 
-This repository implements various machine learning algorithms from scratch using Python. The results of this project help create the reinforcement learning available in [BeatShot](https://github.com/markoleptic/BeatShot) today. You can see how this was implmented in C++ [here](https://github.com/markoleptic/BeatShot/blob/develop/Source/BeatShot/Private/Target/ReinforcementLearningComponent.cpp).
+This repository implements various machine learning algorithms from scratch using Python. 
+
+The results of this project help create the reinforcement learning available in [BeatShot](https://github.com/markoleptic/BeatShot) today. You can see how this was implmented in C++ [here](https://github.com/markoleptic/BeatShot/blob/develop/Source/BeatShot/Private/Target/ReinforcementLearningComponent.cpp).
 
 ## Files
 - **Algos.py:** Implements Sarsa and Q-Learning reinforcement learning algorithms.
